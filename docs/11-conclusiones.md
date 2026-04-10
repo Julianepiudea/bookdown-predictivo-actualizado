@@ -1,0 +1,30 @@
+# Conclusiones e implicaciones para la práctica epidemiológica
+
+El desarrollo de modelos predictivos en salud exige mucho más que elegir un algoritmo. Requiere una secuencia coherente de decisiones conceptuales, clínicas y estadísticas.
+
+## Ideas de cierre
+
+1. **La definición del problema es determinante**. Un modelo pronóstico mal planteado no se corrige con un algoritmo sofisticado.
+2. **La naturaleza del desenlace guía el método**. Continuo, binario, ordinal o tiempo al evento no son variaciones menores; implican marcos analíticos distintos.
+3. **Los datos faltantes son parte del problema científico**. No deben tratarse como un detalle administrativo.
+4. **La validación es obligatoria**. El desempeño aparente nunca es suficiente.
+5. **La calibración es tan importante como la discriminación**.
+6. **La complejidad debe justificarse**. En muchos contextos clínicos, modelos de regresión bien especificados siguen siendo una excelente elección.
+7. **La implementación requiere traducción**. Un modelo útil debe poder presentarse y usarse en escenarios reales.
+
+## Hoja de ruta mínima para futuros proyectos
+
+Cuando desarrolles un modelo predictivo en salud, intenta responder explícitamente estas preguntas:
+
+- ¿Cuál es la población objetivo?
+- ¿Cuál es el desenlace y en qué horizonte temporal?
+- ¿Qué predictores están disponibles en el momento de uso?
+- ¿Cómo se manejarán los datos faltantes?
+- ¿Cómo se modelarán las continuas y posibles no linealidades?
+- ¿Qué estrategia de validación se usará?
+- ¿Qué métricas se reportarán?
+- ¿Cómo se implementará el modelo para el usuario final?
+
+## Cierre final
+
+Un modelo robusto no es necesariamente el más complejo, sino el que combina plausibilidad clínica, solidez estadística, estabilidad y utilidad práctica. Ese equilibrio es, en esencia, el corazón del modelado predictivo en epidemiología y salud.
