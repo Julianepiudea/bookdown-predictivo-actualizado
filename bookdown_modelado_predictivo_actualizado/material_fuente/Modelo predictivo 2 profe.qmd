@@ -1,0 +1,729 @@
+---
+title: "Modelos Predictivos"
+subtitle: "Bioestadística IV - Doctorado en Epidemiología"
+author: "Gilma Hernández"
+date: last-modified
+format: 
+  pdf:
+    include-in-header: 
+      text: |
+        \usepackage{amsmath}
+        \usepackage{amsfonts}
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+---
+
+# Introducción
+
+
+## Fundamentación Matemática del Modelo
+
+El modelo de regresión logística multivariante estima la probabilidad de mortalidad ($P$) mediante la siguiente ecuación estructural:
+
+$$\log \left( \frac{P}{1 - P} \right) = \beta_0 + \beta_1 (\text{cre}) + \beta_2 (\text{loc}) + \beta_3 (\text{log\_sys})$$
+
+Para la selección de variables, aplicamos el operador de selección y contracción mínima (**LASSO**), el cual minimiza la suma de los residuos al cuadrado sujetos a una penalización de los coeficientes ($\lambda$):
+
+$$\min_{\beta} \left[ \sum_{i=1}^{n} (y_i - x_i^T \beta)^2 + \lambda \sum_{j=1}^{p} |\beta_j| \right]$$
+
+
+
+En la fundamentación de modelos predictivos, buscamos entender la relación entre una variable de salida $$\$Y\$$ y un conjunto de predictores $$\$X\$$.
+
+Asumimos que existe una relación funcional:
+
+$$\$\$Y = f(X) + \\epsilon\$\$$
+
+Donde: [-]{.underline} \$f(X)\$: Es la información sistemática que \$X\$ proporciona sobre \$Y\$. [-]{.underline} \$\\epsilon\$: Es el error irreducible (ruido).
+
+Reducción del Error
+
+Nuestro objetivo es estimar \$\\hat{f}\$ tal que minimice la diferencia entre \$Y\$ y \$\\hat{Y}\$.
+
+\> \*\*Punto clave:\*\* es vital distinguir entre el \*\*error reducible\*\* (que mejoramos optimizando \$\\hat{f}\$) y el \*\*error irreducible\*\* (\$\\text{Var}(\\epsilon)\$).
+
+# El Trade-off Sesgo-Varianza
+
+## Descomposición del Error Cuadrático Medio
+
+Para cualquier método predictivo, el error esperado en un punto \$x_0\$ se puede descomponer como:
+
+\$\$E(y_0 [-]{.underline} \\hat{f}(x_0))\^2 = \\text{Var}(\\hat{f}(x_0)) + \[\\text{Bias}(\\hat{f}(x_0))\]\^2 + \\text{Var}(\\epsilon)\$\$
+
+\* \*\*Varianza:\*\* Cuánto cambiaría \$\\hat{f}\$ si lo estimáramos con un conjunto de datos diferente. \* \*\*Sesgo (Bias):\*\* Error introducido al aproximar un problema de la vida real con un modelo simplificado.
+
+# El Paradigma de Shmueli
+
+## Modelado Explicativo ($f_{exp}$)
+
+-   **Objetivo:** Probar hipótesis causales teóricas.
+-   **Enfoque:** Se busca minimizar el **sesgo** para obtener estimadores precisos de los parámetros ($\beta$).
+-   **Salud Pública:** ¿Fumar *causa* cáncer de pulmón? Nos interesa el valor de $p$ y los intervalos de confianza del *Odds Ratio*.
+-   **Métrica:** Coeficientes de determinación ($R^2$), significancia estadística.
+
+## Modelado Predictivo ($f_{pred}$)
+
+-   **Objetivo:** Predecir valores nuevos o futuros ($y_{new}$).
+-   **Enfoque:** Se busca minimizar la combinación de **sesgo y varianza** (el error esperado de predicción).
+-   **Salud Pública:** Basado en datos de movilidad y clima, ¿cuántos casos de Dengue tendremos la próxima semana? No importa tanto el "por qué" exacto, sino la precisión del número.
+-   **Métrica:** RMSE, AUC, Exactitud (Accuracy).
+
+## La Brecha entre Explicar y Predecir
+
+> "A menudo, un modelo con alto poder explicativo puede tener un poder predictivo pobre, y viceversa." --- *Galit Shmueli*
+
+En salud pública, esta confusión es peligrosa: 1. Un modelo que identifica factores de riesgo (explicativo) no siempre sirve para triaje médico (predictivo). 2. El **overfitting** es el enemigo del predictor, pero a veces es irrelevante para el explicador que solo busca describir una muestra específica.
+
+**Nota**: no solo explicamos o predecimos, a menudo simplemente representamos los datos para encontrar estructuras subyacentes sin una teoría causal previa ni un objetivo de pronóstico a futuro.
+
+## El proceso de modelado predictivo
+
+En Epidemiología, el proceso no es lineal, pero Shmueli y otros autores sugieren este flujo para asegurar que el objetivo de predicción se cumpla:
+
+### 1. Definición del Objetivo (Goal Definition)
+
+Antes de tocar los datos, debemos decidir: \* **¿Es un problema de política?** (Explicativo: ¿Qué causa el brote?) \* **¿Es un problema de gestión?** (Predictivo: ¿Cuántas camas UCI ocuparemos?)
+
+### 2. Recolección y Limpieza (Data Preparation)
+
+-   Manejo de **datos faltantes** (común en registros hospitalarios).
+-   Definición de la **unidad de análisis** (individuo, municipio, cohorte).
+-   Ingeniería de características (ej. transformar fechas en "semanas epidemiológicas").
+
+### 3. Selección y Construcción del Modelo
+
+-   **Explicativo:** Basado en la literatura médica y criterios de confusión (DAGs).
+-   **Predictivo:** Basado en algoritmos que manejen interacciones complejas.
+
+### 4. Evaluación y Validación
+
+-   **Interna:** ¿Qué tan bien se ajusta a lo que ya pasó?
+-   **Externa:** ¿Qué tan bien funcionará en la siguiente ola de contagios?
+
+## Aplicación práctica
+
+Usaremos el conjunto de datos ICU de la librería aplore3, el cual contiene información de 200 sujetos admitidos en una UCI.
+
+Planteamiento del problema:
+
+xxxxxxxxxx
+
+Variables: Desenlace (predicha): STA: Vital Status at hospital discharge (1: Lived, 2: Died) Covariables:
+
+age Age (Years)
+
+gender Gender (1: Male, 2: Female)
+
+race Race (1: White, 2: Black, 3: Other)
+
+ser Service at ICU admission (1: Medical, 2: Surgical)
+
+can Cancer part of present problem (1: No, 2: Yes)
+
+crn History of chronic renal failure (1: No, 2: Yes)
+
+inf Infection probable at ICU admission (1: No, 2: Yes)
+
+cpr CPR prior to ICU admission (1: No, 2: Yes)
+
+sys Systolic blood pressure at ICU admission (mm Hg)
+
+hra Heart rate at ICU admission (Beats/min)
+
+pre Previous admission to an ICU within 6 months (1: No, 2: Yes)
+
+type Type of admission (1: Elective, 2: Emergency)
+
+fra Long bone, multiple, neck, single area, or hip fracture (1: No, 2: Yes)
+
+po2 PO2 from initial blood gases (1: \> 60, 2: \<= 60)
+
+ph PH from initial blood gases (1: \>= 7.25, 2: \< 7.25)
+
+pco PCO2 from initial blood gases (1: \<= 45, 2: \> 45)
+
+bic Bicarbonate from initial blood gases (1: \>= 18, 2: \< 18)
+
+cre Creatinine from initial blood gases (1: \<= 2.0, 2: \> 2.0)
+
+loc Level of consciousness at ICU admission (1: No coma or deep stupor, 2: Deep stupor, 3: Coma)
+
+```{r}
+library(aplore3)
+library(tidyverse)
+data(icu)
+str(icu)
+```
+
+```{r, echo=FALSE}
+
+# Verificamos la estructura inicial
+# Convertimos STA a factor si no lo está (importante para clasificación)
+icu <- icu %>%
+  mutate(sta = factor(sta, levels = c("Lived", "Died")))
+
+# Revisión de datos faltantes
+sum(is.na(icu))
+```
+
+## Datos faltantes
+
+### Mecanismos de pérdida
+
+Mecanismos de Pérdida (Rubin, 1976) No todos los datos faltantes son iguales. Se clasifican según la relación entre los datos observados y la probabilidad de que falten:
+
+MCAR (Missing Completely at Random): La falta de datos no tiene relación con ninguna variable. Es puro azar (ej. una muestra de sangre se rompió accidentalmente).
+
+MAR (Missing at Random): La probabilidad de que falte el dato depende de otras variables observadas (ej. los hombres son menos propensos a reportar su peso, pero si conocemos su edad y altura, podemos predecir ese vacío).
+
+MNAR (Missing Not at Random): Es el más problemático. La falta depende del valor mismo que falta (ej. los pacientes más graves no tienen registro de presión arterial porque estaban en crisis). Esto genera sesgo severo.
+
+### Imputación de Datos
+
+La imputación es el proceso de reemplazar los datos faltantes con valores estimados:
+
+Imputación Simple: Usar la media, mediana o moda. Es rápido pero reduce artificialmente la varianza.
+
+Imputación Múltiple (MICE): Crea varias copias del dataset con diferentes valores posibles, analiza cada una y combina los resultados. Es el estándar de oro en investigación porque mantiene la incertidumbre estadística.
+
+```{r, echo=FALSE, message=FALSE}
+
+
+# Cargamos librerías especializadas para ver patrones de pérdida
+library(naniar)
+library(VIM)
+library(ggplot2)
+library(dplyr)
+
+# 1. Resumen numérico de datos faltantes
+miss_var_summary(icu)
+
+# 2. Visualización de patrones (Matriz de datos)
+# Esto permite ver si los datos faltan en "bloques"
+vis_miss(icu) + 
+  theme(axis.text.x = element_text(angle = 90))
+
+# 3. Gráfico de combinación (Aggregated plot)
+# Muestra cuántas variables faltan simultáneamente en las observaciones
+aggr_plot <- aggr(icu, col=c('navyblue','red'), numbers=TRUE, 
+                  sortVars=TRUE, labels=names(icu), 
+                  cex.axis=.7, gap=3, 
+                  ylab=c("Histograma de faltantes","Patrón"))
+```
+
+### Imputación simple
+
+Esta técnica es rápida, pero "engaña" al modelo al reducir artificialmente la varianza, ya que todos los valores faltantes se vuelven iguales.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#| label: imputacion-simple
+#| echo: true
+
+# Usaremos la librería 'mice' o 'Hmisc' para imputación simple rápida
+# Aquí un ejemplo con la media para variables numéricas 
+# y la moda para categóricas usando dplyr
+
+icu_simple <- icu %>%
+  mutate(
+    # Imputar AGE con la media
+  AGE= if_else(is.na(age), mean(age, na.rm = TRUE), age),
+    # Imputar SYS (Presión Sistólica) con la mediana por ser menos sensible a valores extremos
+    SYS = if_else(is.na(sys), median(sys, na.rm = TRUE), sys)
+  )
+
+# Verificamos que ya no hay faltantes en esas variables
+sum(is.na(icu_simple$age))
+```
+
+
+### Imputación múltiple
+
+Imputación Múltiple con MICE
+MICE (Multivariate Imputation by Chained Equations) es más sofisticada: predice el valor faltante de una variable usando las demás variables del dataset como predictores.
+
+**Notas**
+PMM (Predictive Mean Matching): El método pmm es excelente porque el valor imputado siempre será un valor real que ya existe en los datos originales, lo cual evita que imputemos valores imposibles (como una edad negativa o media persona).
+
+La Variabilidad: En el gráfico de **stripplot**, si los puntos rojos (imputados) están en las mismas zonas que los azules (observados), la imputación es plausible.
+
+**Advertencia**:la imputación múltiple se debe hacer después de haber separado los datos en train y test (o manejar la separación dentro del flujo de MICE) para evitar el "Data Leakage" (fuga de información), donde el conjunto de prueba termina conociendo información del conjunto de entrenamiento.
+
+
+### Comparación Post-Imputación (Visualización)
+
+Es fundamental mostrar s que la imputación no sesgó las distribuciones originales. Con un gráfico que compare la variable age antes y después de usar MICE.
+
+
+```{r}
+#| label: imputacion-mice
+#| echo: true
+#| message: false
+
+library(mice)
+
+# 1. Definir el método de imputación (pmm: predictive mean matching es el estándar)
+# 2. m=5 indica que creará 5 datasets "completos" diferentes
+imputed_data <- mice(icu, m = 5, method = 'pmm', seed = 500)
+
+# 3. Ver el resumen del proceso
+summary(imputed_data)
+
+# 4. Extraer el dataset número 3 (por ejemplo) para seguir con el modelo
+icu_final <- complete(imputed_data, 3)
+
+# 5. Visualizar si la distribución de los datos imputados 
+# sigue la tendencia de los observados
+stripplot(imputed_data, age ~ .imp, pch = 20, cex = 1.2)
+```
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+
+# Extraer el dataset imputado (usando la imputación 1 como ejemplo)
+icu_complete <- complete(imputed_data, 1)
+
+# Gráfico comparativo de densidades
+ggplot() +
+  geom_density(data = icu, aes(x = age), color = "blue", size = 1, linetype = "dashed") +
+  geom_density(data = icu_complete, aes(x = age), color = "red", size = 1) +
+  labs(title = "Distribución de Edad",
+       subtitle = "Azul: Original (con faltantes) | Rojo: Imputado (MICE)",
+       x = "Edad", y = "Densidad") +
+  theme_minimal()
+```
+
+
+Si las curvas son casi idénticas, significa que el método MICE preservó las propiedades estadísticas de la muestra original de la UCI. Si la curva roja fuera mucho más alta y estrecha en un solo punto, sabríamos que la imputación fue deficiente (como ocurre con la imputación por la media).
+
+
+## Datos atípicos
+
+# Preprocesamiento: Datos Atípicos (Outliers)
+
+## ¿Qué es un Outlier ?
+Un dato atípico es una observación que se desvía tanto de las demás que genera sospechas de que fue generada por un mecanismo diferente.
+
+* **Outliers de Error:** Fallos en sensores o digitación (ej. Edad = 250 años). Se deben corregir o eliminar.
+* **Outliers Biológicos:** Pacientes con valores fisiológicos extremos (ej. Glucosa muy alta). Estos son los más interesantes para la predicción, ¡no siempre hay que borrarlos!
+
+## Identificación Univariante: Regla de Tukey
+Un método estándar es el uso del **Rango Intercuartílico (IQR)**. Se considera atípico si el valor está fuera de:
+$$[Q_1 - 1.5 \times IQR, \quad Q_3 + 1.5 \times IQR]$$
+
+## Identificación Multivariante: Distancia de Mahalanobis
+
+A veces un valor no es atípico en una sola variable, pero sí en su **combinación**. 
+* Ej: Un paciente de 10 años (normal) con una cirugía de próstata (normal para adultos). La combinación es el outlier.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+library(ggplot2)
+
+# 1. Boxplot para identificar visualmente (ej. Variable AGE o SYS)
+ggplot(icu, aes(y = sys)) +
+  geom_boxplot(fill = "lightblue", outlier.color = "red") +
+  labs(title = "Boxplot de Presión Sistólica (SYS)",
+       y = "Presión (mmHg)") +
+  theme_minimal()
+
+# 2. Identificación por Distancia de Mahalanobis (Multivariante)
+# Usamos solo variables numéricas
+icu_num <- icu %>% select(age, sys, hra) # Ejemplo con algunas variables
+m_dist <- mahalanobis(icu_num, colMeans(icu_num), cov(icu_num))
+
+# Umbral basado en Chi-cuadrado (p < 0.001)
+cutoff <- qchisq(0.999, df = ncol(icu_num))
+outliers_multi <- which(m_dist > cutoff)
+
+cat("Se encontraron", length(outliers_multi), "outliers multivariantes.")
+```
+
+**Qué hacer con estos datos, si existen?**
+
+**Winsorización**: En lugar de borrar el dato, se reemplaza por el valor máximo "permitido" (el límite del boxplot). Esto mantiene el registro pero reduce su influencia extrema.
+
+**Transformación**: Usar logaritmos para comprimir la escala de variables muy sesgadas.
+
+**Análisis de Sensibilidad**: Correr el modelo con y sin outliers para ver si las conclusiones cambian drásticamente.
+
+
+En salud pública, las transformaciones no son solo un "truco" estadístico; son necesarias porque muchas variables biológicas (como niveles de creatinina, carga viral o incluso la presión arterial en ciertos estados) no siguen una distribución normal y presentan colas largas hacia la derecha.
+
+
+# Preprocesamiento: Transformación de Datos
+
+## ¿Por qué transformar?
+Muchos modelos predictivos (especialmente los basados en distancias o regresiones sin regularización fuerte) asumen normalidad o simetría.
+
+ **Logaritmo ($\log(x)$):** Comprime los valores altos y expande los bajos. Ideal para variables con sesgo positivo (cola a la derecha).
+* **Raíz Cuadrada ($\sqrt{x}$):** Una transformación más suave que el logaritmo.
+* **Estandarización ($Z$):** Lleva las variables a media 0 y desviación estándar 1. Es **obligatorio** antes de usar LASSO.
+
+## Visualización del Efecto Log
+Si una variable como la frecuencia cardíaca o la presión sistólica tiene outliers altos, el logaritmo puede "traerlos" de vuelta al cuerpo principal de la distribución.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# 1. Transformación (Ejemplo con sys si tuviera sesgo)
+# Usamos log1p (log(x+1)) por seguridad ante valores cero
+icu <- icu %>%
+  mutate(log_sys = log1p(sys))
+
+head(icu, 10)
+```
+
+Después del preprocesamiento de los datos, revisar el resumen estadístico de los datos teniendo en cuenta el desenlace.
+
+## Análisis descriptivo
+
+
+Análisis Descriptivo (EDA)
+Antes de modelar, debemos entender la distribución de nuestros predictores y cómo se comportan respecto a la variable de interés (STA).
+
+Tabla 1: Resume las variables continuas (media/mediana) y categóricas (frecuencias) estratificadas por el estado vital.
+
+Visualización: Los gráficos de densidad y cajas nos ayudan a ver si hay separación clara entre los grupos antes de meterlos al algoritmo.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+library(tableone)
+vars <- names(icu)[!names(icu) %in% c("id", "sta")]
+
+# Ahora creamos la tabla
+tabla1 <- CreateTableOne(vars = vars, strata = "sta", data = icu, test = TRUE)
+print(tabla1, smd = TRUE) # smd = TRUE añade la Diferencia Media Estandarizada
+```
+
+**Advertencia** Revisar para las variables cuantitativas la normalidad y ajustar la tabla 1.  (Les queda de tarea)
+
+### Gráficos
+
+```{r}
+
+# Edad vs Estado Vital
+ggplot(icu, aes(x = sta, y = age, fill = sta)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.4, aes(color = sta)) +
+  labs(title = "Edad según Estado Vital", x = "Estado al alta", y = "Años") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1")
+
+# Presión Sistólica vs Estado Vital
+ggplot(icu, aes(x = sta, y = sys, fill = sta)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.4, aes(color = sta)) +
+  labs(title = "Presión Sistólica (SYS)", x = "Estado al alta", y = "mmHg") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+
+# Frecuencia cardiaca vs Estado Vital
+ggplot(icu, aes(x = sta, y = hra, fill = sta)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.4, aes(color = sta)) +
+  labs(title = "Frecuencia cardíaca (hra)", x = "Estado al alta", y = "lat/min") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+
+```
+
+
+
+```{r}
+
+
+# Función rápida para graficar proporciones
+plot_cat <- function(data, var, label) {
+  ggplot(data, aes(x = !!sym(var), fill = sta)) +
+    geom_bar(position = "fill") + # "fill" para ver proporciones (0 a 1)
+    labs(title = paste("Mortalidad por", label), 
+         y = "Proporción", x = label) +
+    scale_y_continuous(labels = scales::percent) +
+    theme_minimal() +
+    scale_fill_viridis_d(option = "mako", begin = 0.3, end = 0.7)
+}
+
+# Ejemplo con TYPE (Tipo de admisión) e INF (Infección)
+plot_cat(icu, "type", "Tipo de Admisión")
+plot_cat(icu, "inf", "Infección Presente")
+```
+
+Completar los gráficos
+
+```{r}
+# Ejemplo con TYPE (Tipo de admisión) e INF (Infección)
+plot_cat(icu, "po2", "PO2")
+plot_cat(icu, "pco", "Presión de Oxígeno")
+```
+
+
+```{r}
+# 2. Segmentación del archivo (Train/Test Split)
+# Es vital hacer esto DESPUÉS de limpiar pero ANTES de cualquier selección de variables
+library(caret)
+set.seed(2026) # Usamos el año actual para reproducibilidad
+
+trainIndex <- createDataPartition(icu$sta, p = 0.75, list = FALSE)
+
+train_set <- icu[trainIndex, ]
+test_set  <- icu[-trainIndex, ]
+
+cat("Tamaño de entrenamiento:", nrow(train_set), "\n")
+cat("Tamaño de prueba:", nrow(test_set))
+```
+
+
+Con el set de entrenamiento nos encargamos de los datos missing
+
+## Inicia desarrollo del modelo
+
+### Selección de variables por LASSO
+
+¿Por qué LASSO primero y no una Regresión Simple?
+En el train_set tenemos muchas variables. Si metemos todas a una regresión logística normal:
+
+Tendríamos sobreajuste (el modelo aprende el ruido de la UCI).
+
+La colinealidad podría volver locos a los coeficientes.
+
+LASSO soluciona esto automáticamente. 
+**Pero**: glmnet (la librería de LASSO) es un poco "especial" y no acepta fórmulas de R directamente; necesita matrices.
+
+
+```{r}
+
+
+library(glmnet)
+
+# 1. Preparar las matrices (LASSO no acepta data.frames directamente)
+# model.matrix convierte variables categóricas en dummies automáticamente
+
+x_train <- model.matrix(sta ~ . , data = train_set)[,-1] # Quitamos el intercepto
+y_train <- ifelse(train_set$sta == "Died", 1, 0)
+
+# 2. Ejecutar validación cruzada para encontrar el mejor Lambda (penalización)
+cv_lasso <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 1)
+
+# 3. Graficar el proceso de selección
+plot(cv_lasso)
+```
+
+
+El eje X superior: Indica cuántas variables quedan en el modelo. Se observa que, a medida que aumenta la penalización (Lambda), el modelo va "matando" variables hasta quedarse solo con las más importantes.
+
+Las líneas punteadas: * lambda.min: El valor que da el error mínimo.
+
+lambda.1se: Un modelo más parsimonioso (con menos variables) pero casi igual de bueno. En salud pública, lambda.1se suele ser el favorito porque es más sencillo de aplicar en clínica.
+
+
+El gráfico de LASSO tiene "barras de error" en cada punto rojo.
+En lugar de confiar en una sola partición, la Validación Cruzada divide el conjunto de entrenamiento en $k$ partes (usualmente 10).
+Entrenamiento: El modelo se entrena en 9 partes.
+Validación: Se prueba en la parte restante para calcular el error.
+Rotación: El proceso se repite 10 veces, de modo que cada parte sea "el examen" una vez.
+Promedio: El valor de $\lambda$ que elegimos es el que, en promedio, dio el error más bajo en todas las rotaciones.
+
+Sin Validación Cruzada, se estaría haciendo "ajuste excesivo" (Overfitting). La VC le da al modelo una "dosis de realidad", obligándolo a demostrar que su capacidad predictiva se mantiene en diferentes subgrupos de pacientes de la UCI.
+
+Esto garantiza que las variables ganadoras que se obtienen no son producto del azar de una sola muestra, sino predictores consistentes.
+
+En LASSO, las variables ganadoras son aquellas cuyos coeficientes no son cero. Vamos a extraerlas usando el criterio de lambda.1se (que es el modelo más sencillo y robusto).
+
+```{r}
+
+
+# 1. Convertir a matriz y luego a data frame
+lasso_matriz <- as.matrix(coef(cv_lasso, s = "lambda.1se"))
+
+# 2. Limpiar sin usar nombres de columna problemáticos
+variables_finales <- lasso_matriz %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Variable") %>%
+  # Renombramos la segunda columna (la de los coeficientes) sin importar su nombre
+  dplyr::rename(Coeficiente = 2) %>% 
+  dplyr::filter(Coeficiente != 0) %>%
+  dplyr::filter(Variable != "(Intercept)") # Opcional: quitar el intercepto para la lista
+
+print(variables_finales)
+```
+
+## Ajuste del modelo final pos LASSO
+
+```{r}
+
+
+# Ajustamos el modelo usando los nombres de las variables originales
+# R se encarga de gestionar los niveles (Stupor, Coma, etc.) automáticamente
+modelo_final <- glm(sta ~ cre + loc + log_sys, 
+                    data = train_set, 
+                    family = binomial())
+
+# Resumen del modelo
+summary(modelo_final)
+```
+
+##  Medidas de rendimiento del modelo
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(pROC)
+
+# 1. Generar probabilidades en el set de prueba
+prob_test <- predict(modelo_final, newdata = test_set, type = "response")
+
+# 2. Crear objeto ROC (especificamos los niveles para evitar confusiones)
+roc_obj <- roc(test_set$sta, prob_test, levels = c("Lived", "Died"))
+
+# 3. Gráfico de la Curva ROC
+plot(roc_obj, col = "#2c3e50", lwd = 3, 
+     main = paste("Curva ROC - AUC:", round(auc(roc_obj), 3)),
+     xlab = "Especificidad (1 - Falsos Positivos)",
+     ylab = "Sensibilidad (Verdaderos Positivos)")
+abline(a = 1, b = 1, lty = 2, col = "red")
+```
+
+
+## Curva y pendiente de calibración
+
+```{r}
+library(ResourceSelection)
+
+
+# Creamos un dataframe con los resultados observados y predichos
+calib_data <- data.frame(
+  observado = ifelse(test_set$sta == "Died", 1, 0),
+  predicho = prob_test
+)
+
+# Ajustamos una regresión logística sobre las probabilidades (Pendiente de Calibración)
+# En un modelo perfecto, el intercepto es 0 y la pendiente es 1.
+calib_model <- glm(observado ~ qlogis(predicho), data = calib_data, family = "binomial")
+slope <- coef(calib_model)[2]
+
+# Gráfico de Calibración
+library(ggplot2)
+ggplot(calib_data, aes(x = predicho, y = observado)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), color = "blue") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "Gráfico de Calibración",
+       subtitle = paste("Pendiente de Calibración (Slope):", round(slope, 3)),
+       x = "Probabilidad Predicha",
+       y = "Probabilidad Observada (Frecuencia Real)") +
+  theme_minimal()
+```
+
+
+## Prueba de bondad de ajuste
+
+```{r}
+library(ResourceSelection)
+# 1. Extraer lo observado (en formato numérico 0/1)
+# Aseguramos que 'Died' sea 1
+observado_num <- ifelse(test_set$sta == "Died", 1, 0)
+
+# 2. Probabilidades predichas (ya las calculamos antes)
+# prob_test <- predict(modelo_final, newdata = test_set, type = "response")
+
+# 3. Ejecutar la prueba (g = 10 es el estándar por defecto)
+hl_test <- hoslem.test(observado_num, prob_test, g = 10)
+
+print(hl_test)
+```
+
+## Curva beneficio neto
+
+¿Ganamos algo usando este modelo en lugar de tratar a todos los pacientes o no tratar a nadie?
+
+
+Componentes del gráfico:
+
+Línea "Treat All" (Roja): Representa el beneficio neto si asumiéramos que todos los pacientes de la UCI van a morir y los tratamos agresivamente a todos.
+
+Línea "Treat None" (Horizontal en 0): El beneficio si no hiciéramos nada con ningún paciente.
+
+Línea del Modelo (azul): El beneficio neto de usar este modelo para decidir a quién intervenir.
+
+$$\text{Net Benefit} = \frac{\text{Verdaderos Positivos}}{n} - \frac{\text{Falsos Positivos}}{n} \left( \frac{p_t}{1 - p_t} \right)$$
+
+Donde $p_t$ es el umbral de probabilidad (threshold). Esta fórmula básicamente "castiga" al modelo por los falsos positivos (darle cuidados intensivos innecesarios a alguien que iba a sobrevivir), ponderado por la importancia clínica que le demos al evento.
+
+```{r}
+# "Análisis de Curva de Decisión (DCA): Beneficio Neto del Modelo UCI"
+
+library(dcurves)
+library(ggplot2)
+
+# 1. Aseguramos que los datos estén listos
+dca_data <- data.frame(
+  sta_num = ifelse(test_set$sta == "Died", 1, 0),
+  modelo_uci = prob_test
+)
+
+# 2. Ejecutamos el análisis
+dca_obj <- dca(sta_num ~ modelo_uci, 
+               data = dca_data,
+               thresholds = seq(0, 0.50, by = 0.01),
+               label = list(modelo_uci = "Nuestro Modelo UCI"))
+
+# 3. Forzamos el dibujado (Importante para Quarto/PDF)
+plot(dca_obj) +
+  theme_minimal() +
+  labs(x = "Umbral de Probabilidad", y = "Beneficio Neto")
+```
+
+Análisis
+
+la línea azul (modelo_uci) está por encima de las otras dos líneas en casi todo el espectro, especialmente a partir del 15% de umbral.
+
+Entre 0% y 15%: El modelo se comporta de forma similar a la estrategia de "Tratar a todos" (Treat All). Esto es lógico en la UCI: si el umbral de riesgo para intervenir es muy bajo, casi todos reciben la intervención.
+
+A partir del 20%: Aquí es donde el modelo "es útil". Mientras que la estrategia de "Tratar a todos" cae por debajo de cero (causando más daño que beneficio debido a los falsos positivos), este modelo mantiene un Beneficio Neto positivo y estable (alrededor de 0.05 - 0.08).
+
+
+Punto de Corte Clínico:
+
+Si un médico decide que solo intervendrá a pacientes con un riesgo de muerte mayor al 20%, usar este modelo le permite obtener un beneficio neto mucho mayor que si decidiera tratar a todos o no tratar a nadie.
+
+Conclusión DR
+
+El Análisis de Curva de Decisión (DCA) confirma la utilidad clínica del modelo propuesto. A diferencia de las medidas de precisión tradicionales (como el AUC), la DCA demuestra que el uso del modelo para guiar decisiones clínicas proporciona un Beneficio Neto superior a las estrategias convencionales de 'tratar a todos' o 'no tratar a nadie'. Específicamente, en umbrales de riesgo superiores al 15%, el modelo permite identificar a los pacientes con mayor riesgo de mortalidad, optimizando los recursos de la UCI y reduciendo las intervenciones innecesarias en pacientes de bajo riesgo.
+
+
+## Ahora sí, herramientas para que sea usado
+
+### Nomograma
+
+```{r}
+
+
+library(rms)
+
+# 1. Ajustar el modelo dentro del entorno de rms
+dd <- datadist(train_set)
+options(datadist = "dd")
+
+# Ajustamos el modelo (notar que rms usa lrm para logística)
+f <- lrm(sta ~ cre + loc + log_sys, data = train_set, x=TRUE, y=TRUE)
+
+# 2. Generar el nomograma
+nom <- nomogram(f, 
+                fun = plogis, # Convierte el logit en probabilidad (0-1)
+                fun.at = c(0.1, 0.3, 0.5, 0.7, 0.9), 
+                funlabel = "Riesgo de Mortalidad")
+
+plot(nom, cex.axis = 0.8)
+```
+En el nomograma:
+($Points_i$) de una variable se obtienen mediante una transformación lineal de los coeficientes:$$Points_i = \left( \frac{\beta_i \cdot (X_i - min(X_i))}{\text{Rango máximo de impacto de cualquier variable}} \right) \times 100$$ En palabras simples:El eje de Points (0-100) es una escala estandarizada.El eje de Total Points es la suma de  os valores escalados.La línea final de Riesgo es la aplicación de la función logística $P = 1 / (1 + e^{-\text{logit}})$ sobre esa suma.
+
+
+## Calculadora
+
+
